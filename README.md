@@ -16,7 +16,7 @@ I have created many files in different languages with some errors and it is up t
 1. Pick a coding language that you like from the curated list I created.
 2. Search in *issues* for that respective language's issue.
 3. Choose any issue from the *many* exercises there in that programming language.
-4. Read the issue description *extensively* so that you understand it *properly*.
+4. Read the issue description *throughly* so that you understand it *properly*.
 5. Fork the repository and choose a brief name that you like, or let it remain the same (which I recommend :smile:).
 6. Edit the respective file in the forked repository and send the corrected file with a message explaining what you changed in the file.
 7. Send a pull request to me and I will check it.
