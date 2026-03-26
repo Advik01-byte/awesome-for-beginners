@@ -34,3 +34,40 @@ I have created many files in different languages with some errors and it is up t
 | JavaScript | JavaScript is a high-level, interpreted scripting language used to create interactive and dynamic content on websites and power full-stack applications. | No, not necessary in a seperate JS file |
 | Java | Java is a versatile, object-oriented language used for building enterprise-grade applications, Android mobile apps, and large-scale backend systems. | Yes |
 | Python | Python is a versatile, high-level language used for data science, web development, and automation due to its simple, readable syntax. | No |
+
+# Boilerplate code for each language (if needed)
+
+## C++
+
+```cpp
+#include <iostream>
+
+int main() {
+  // Your code here
+  return 0;
+}
+```
+
+## HTML
+
+```html
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Your code here -->
+  </head>
+  <body>
+    <!-- Your code here -->
+  </body>
+</html>
+```
+
+## Java
+
+```java
+public class Main {
+    public static void main(String[] args) {
+        // Your code here
+    }
+}
+```
