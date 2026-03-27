@@ -15,28 +15,63 @@ I have created many files in different languages with some errors and it is up t
 
 ---
 
-# How can you contribute?
+# 🚀 How can you contribute?
 
-![Contribution Flow](https://img.shields.io/badge/Step%201-Pick%20a%20Language-informational?style=for-the-badge)
-![Contribution Flow](https://img.shields.io/badge/Step%202-Find%20Issues-informational?style=for-the-badge)
+> **No more hunting through Issues!** All exercises are organized by language and difficulty level in [**EXERCISES.md**](./EXERCISES.md)
+
+![Contribution Flow](https://img.shields.io/badge/Step%201-Browse%20Exercises-informational?style=for-the-badge)
+![Contribution Flow](https://img.shields.io/badge/Step%202-Pick%20One-informational?style=for-the-badge)
 ![Contribution Flow](https://img.shields.io/badge/Step%203-Fix%20%26%20PR-success?style=for-the-badge)
 
-1. Pick a coding language that you like from the curated list I created.
-2. Search in *issues* for that respective language's issue.
-3. Choose any issue from the *many* exercises there in that programming language.
-4. Read the issue description *thoroughly* so that you understand it *properly*.
-5. Fork the repository to your GitHub account.
-6. Clone your forked repository: `git clone https://github.com/your-username/awesome-for-beginners.git`
-7. Create a new branch: `git checkout -b fix/issue-name`
-8. Make your changes to the respective file.
-9. Commit your changes with a clear message: `git commit -m "Fix: description of what you fixed"`
-10. Push your branch: `git push origin fix/issue-name`
-11. Open a pull request to the main repository and describe your changes.
-12. **YOU ARE DONE!!** :smile:
+## Quick Start
+
+### 1️⃣ **Browse All Exercises**
+👉 [**Go to EXERCISES.md**](./EXERCISES.md) to see all available coding challenges organized by:
+- **Language** (Python, JavaScript, Java, C++, HTML, CSS)
+- **Difficulty Level** (Beginner → Intermediate → Advanced)
+
+### 2️⃣ **Pick an Exercise**
+- Start with **Beginner** level if you're new
+- Read the exercise description to understand what needs to be fixed
+- Click the link to view the exercise file
+
+### 3️⃣ **Fix & Submit**
+
+```bash
+# 1. Fork the repository to your GitHub account
+
+# 2. Clone your forked repository
+git clone https://github.com/your-username/awesome-for-beginners.git
+cd awesome-for-beginners
+
+# 3. Navigate to the exercise file
+cd [language]/[exercise-name]
+
+# 4. Read the file and understand what needs fixing
+# (Instructions are in the file comments)
+
+# 5. Fix the code
+
+# 6. Test your solution locally
+
+# 7. Create a new branch
+git checkout -b fix/[language]-[exercise-name]
+
+# 8. Commit your changes
+git commit -m "Fix: [description of what you fixed]"
+
+# 9. Push your branch
+git push origin fix/[language]-[exercise-name]
+
+# 10. Open a Pull Request to the main repository
+# Describe your changes clearly in the PR description
+
+# 11. YOU ARE DONE!! 🎉
+```
 
 ---
 
-# Coding languages
+# 📚 Coding languages
 
 | **Language** | **Usage** | **Logo** | **Boilerplate code?** |
 |---|---|---|---|
@@ -47,7 +82,9 @@ I have created many files in different languages with some errors and it is up t
 | Java | Java is a versatile, object-oriented language used for building enterprise-grade applications, Android mobile apps, and large-scale backend systems. | ![java logo image](https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg) | Yes |
 | Python | Python is a versatile, high-level language used for data science, web development, and automation due to its simple, readable syntax. | ![python logo image](https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg) | No |
 
-# Boilerplate code for each language (if needed)
+---
+
+# 📝 Boilerplate code for each language (if needed)
 
 ## C++
 
@@ -84,7 +121,9 @@ public class Main {
 }
 ```
 
-# Errors
+---
+
+# ⚠️ Found an Error?
 
 ![Support](https://img.shields.io/badge/Found%20an%20Issue%3F-Report%20It-red?style=for-the-badge)
 
