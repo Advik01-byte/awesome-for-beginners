@@ -1,1 +1,2 @@
+# Intermediate Python Exercise
 # Write a function to find the factorial of a number
