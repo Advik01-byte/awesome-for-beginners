@@ -1,13 +1,37 @@
-# Python Exercises
+# Python Exercise Files
 
-## Easy Exercises
-1. **Exercise 1:** Write a program to calculate the sum of two numbers.
-2. **Exercise 2:** Create a simple calculator that can add, subtract, multiply, and divide.
+## Beginner
 
-## Medium Exercises
-1. **Exercise 1:** Write a program to find the factorial of a number.
-2. **Exercise 2:** Create a program that simulates a simple game (e.g., Rock, Paper, Scissors).
+- **Exercise Name:** Hello World  
+  **File Path:** `python/Beginner/Exercise_1.py`  
+  **Description:** Make a program that prints 'Hello, World!' and uses variables to store your name and print a personalized greeting.  
+  **Link to README:** [Beginner Exercises](Beginner)
 
-## Hard Exercises
-1. **Exercise 1:** Build a web scraper using requests and BeautifulSoup to extract data from a website.
-2. **Exercise 2:** Implement a small REST API using Flask that allows users to interact with a simple database.
+- **Exercise Name:** Simple Calculator  
+  **File Path:** `python/Beginner/Exercise_2.py`  
+  **Description:** Create a simple calculator that takes two numbers and performs basic operations (add, subtract, multiply, divide).  
+  **Link to README:** [Beginner Exercises](Beginner)
+
+## Intermediate
+
+- **Exercise Name:** Factorial Calculator  
+  **File Path:** `python/Intermediate/Exercise_1.py`  
+  **Description:** Write a function that calculates the factorial of a number using recursion or loops.  
+  **Link to README:** [Intermediate Exercises](Intermediate)
+
+- **Exercise Name:** Rock, Paper, Scissors Game  
+  **File Path:** `python/Intermediate/Exercise_2.py`  
+  **Description:** Create a simple game where a user plays Rock, Paper, Scissors against the computer.  
+  **Link to README:** [Intermediate Exercises](Intermediate)
+
+## Advanced
+
+- **Exercise Name:** Web Scraper  
+  **File Path:** `python/Advanced/Exercise_1.py`  
+  **Description:** Build a web scraper using requests and BeautifulSoup to extract data from a website and save it to a CSV file.  
+  **Link to README:** [Advanced Exercises](Advanced)
+
+- **Exercise Name:** Simple REST API  
+  **File Path:** `python/Advanced/Exercise_2.py`  
+  **Description:** Implement a simple REST API using Flask with basic CRUD operations for a todo list application.  
+  **Link to README:** [Advanced Exercises](Advanced)
