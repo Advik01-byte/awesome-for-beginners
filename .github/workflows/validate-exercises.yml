@@ -28,12 +28,15 @@ jobs:
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          echo "Changed files: $CHANGED_FILES"
+          echo "Changed files:"
+          echo "$CHANGED_FILES"
 
       - name: Setup environments
         run: |
           sudo apt-get update
           sudo apt-get install -y g++
+          npm install -g htmlhint
+          npm install -g stylelint stylelint-config-standard
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -53,30 +56,38 @@ jobs:
           
           CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
           
-          # Only validate exercise files that were changed
           echo "=== Validating Changed Files ==="
           
           while IFS= read -r file; do
-            if [ -z "$file" ]; then
+            if [ -z "$file" ] || [ ! -f "$file" ]; then
               continue
             fi
             
+            echo ""
             echo "Checking: $file"
             
             # Validate HTML files
             if [[ $file == *.html ]]; then
-              if ! grep -q "<!DOCTYPE" "$file" 2>/dev/null; then
-                echo "❌ Missing DOCTYPE in $file"
+              echo "Running HTMLHint..."
+              if ! htmlhint "$file" 2>&1; then
+                echo "❌ HTML validation failed for $file"
                 VALIDATION_FAILED=1
-              fi
-              if ! grep -q "</html>" "$file" 2>/dev/null; then
-                echo "❌ Missing closing </html> tag in $file"
-                VALIDATION_FAILED=1
+              else
+                echo "✅ HTML is valid"
               fi
             fi
             
             # Validate CSS files
             if [[ $file == *.css ]]; then
+              echo "Running StyleLint..."
+              if ! npx stylelint "$file" 2>&1; then
+                echo "❌ CSS validation failed for $file"
+                VALIDATION_FAILED=1
+              else
+                echo "✅ CSS is valid"
+              fi
+              
+              # Also check for common typos
               if grep -q "colour:" "$file" 2>/dev/null; then
                 echo "❌ Found typo 'colour:' in $file (should be 'color:')"
                 VALIDATION_FAILED=1
@@ -85,55 +96,60 @@ jobs:
             
             # Validate JavaScript files
             if [[ $file == *.js ]]; then
+              echo "Checking JavaScript syntax..."
               if ! node -c "$file" 2>/dev/null; then
                 echo "❌ Syntax error in $file"
                 VALIDATION_FAILED=1
+              else
+                echo "✅ JavaScript syntax is valid"
               fi
             fi
             
             # Validate Java files
             if [[ $file == *.java ]]; then
+              echo "Checking Java..."
               if grep -q "TODO" "$file" 2>/dev/null; then
-                echo "❌ Found TODO comment in $file (incomplete)"
+                echo "❌ Found TODO comment in $file (incomplete - remove TODO comments)"
                 VALIDATION_FAILED=1
               fi
               if ! javac "$file" 2>/dev/null; then
-                echo "❌ Compilation error in $file"
+                echo "❌ Java compilation error in $file"
                 VALIDATION_FAILED=1
+              else
+                echo "✅ Java compiles successfully"
               fi
             fi
             
             # Validate C++ files
             if [[ $file == *.cpp ]]; then
+              echo "Checking C++..."
               if grep -q "TODO" "$file" 2>/dev/null; then
-                echo "❌ Found TODO comment in $file (incomplete)"
+                echo "❌ Found TODO comment in $file (incomplete - remove TODO comments)"
                 VALIDATION_FAILED=1
               fi
               if ! g++ -c "$file" -o /tmp/test.o 2>/dev/null; then
-                echo "❌ Compilation error in $file"
+                echo "❌ C++ compilation error in $file"
                 VALIDATION_FAILED=1
+              else
+                echo "✅ C++ compiles successfully"
               fi
             fi
             
           done <<< "$CHANGED_FILES"
           
+          echo ""
+          echo "================================"
           if [ $VALIDATION_FAILED -eq 0 ]; then
+            echo "✅ ALL VALIDATIONS PASSED"
             echo "VALIDATION_RESULT=PASS" >> $GITHUB_OUTPUT
-            echo "✅ All changed files validated successfully!"
             exit 0
           else
+            echo "❌ VALIDATION FAILED"
             echo "VALIDATION_RESULT=FAIL" >> $GITHUB_OUTPUT
-            echo "❌ Validation failed for changed files!"
             exit 1
           fi
 
-      - name: Set PR Status
+      - name: Final Result
         if: always()
         run: |
-          if [ "${{ steps.validate.outputs.VALIDATION_RESULT }}" = "PASS" ]; then
-            echo "✅ PASS - All validations passed"
-            exit 0
-          else
-            echo "❌ FAIL - Some validations failed"
-            exit 1
-          fi
+          echo "Final Validation Result: ${{ steps.validate.outputs.VALIDATION_RESULT }}"
