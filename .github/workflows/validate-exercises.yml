@@ -20,6 +20,16 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      - name: Get changed files
+        id: changed_files
+        run: |
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Changed files: $CHANGED_FILES"
+
       - name: Setup environments
         run: |
           sudo apt-get update
@@ -36,83 +46,94 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: Run validation
+      - name: Validate changed files
         id: validate
         run: |
           VALIDATION_FAILED=0
           
-          # Validate HTML files
-          echo "=== Validating HTML ==="
-          for file in $(find exercises/html -name "*.html" -type f 2>/dev/null); do
-            echo "Checking $file..."
-            if ! grep -q "<!DOCTYPE" "$file" 2>/dev/null; then
-              echo "❌ Missing DOCTYPE in $file"
-              VALIDATION_FAILED=1
-            fi
-            if ! grep -q "</html>" "$file" 2>/dev/null; then
-              echo "❌ Missing closing </html> tag in $file"
-              VALIDATION_FAILED=1
-            fi
-          done
+          CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
           
-          # Validate CSS files
-          echo "=== Validating CSS ==="
-          for file in $(find exercises/css -name "*.css" -type f 2>/dev/null); do
-            echo "Checking $file..."
-            if grep -q "colour:" "$file" 2>/dev/null; then
-              echo "❌ Found typo 'colour:' in $file (should be 'color:')"
-              VALIDATION_FAILED=1
-            fi
-          done
+          # Only validate exercise files that were changed
+          echo "=== Validating Changed Files ==="
           
-          # Validate JavaScript files
-          echo "=== Validating JavaScript ==="
-          for file in $(find exercises/javascript -name "*.js" -type f 2>/dev/null); do
-            echo "Checking $file..."
-            if ! node -c "$file" 2>/dev/null; then
-              echo "❌ Syntax error in $file"
-              VALIDATION_FAILED=1
+          while IFS= read -r file; do
+            if [ -z "$file" ]; then
+              continue
             fi
-          done
-          
-          # Validate Java files
-          echo "=== Validating Java ==="
-          for file in $(find exercises/java -name "*.java" -type f 2>/dev/null); do
-            echo "Checking $file..."
-            if grep -q "TODO" "$file" 2>/dev/null; then
-              echo "❌ Found TODO comment in $file (incomplete)"
-              VALIDATION_FAILED=1
+            
+            echo "Checking: $file"
+            
+            # Validate HTML files
+            if [[ $file == *.html ]]; then
+              if ! grep -q "<!DOCTYPE" "$file" 2>/dev/null; then
+                echo "❌ Missing DOCTYPE in $file"
+                VALIDATION_FAILED=1
+              fi
+              if ! grep -q "</html>" "$file" 2>/dev/null; then
+                echo "❌ Missing closing </html> tag in $file"
+                VALIDATION_FAILED=1
+              fi
             fi
-          done
-          
-          # Validate C++ files
-          echo "=== Validating C++ ==="
-          for file in $(find exercises/cpp -name "*.cpp" -type f 2>/dev/null); do
-            echo "Checking $file..."
-            if grep -q "TODO" "$file" 2>/dev/null; then
-              echo "❌ Found TODO comment in $file (incomplete)"
-              VALIDATION_FAILED=1
+            
+            # Validate CSS files
+            if [[ $file == *.css ]]; then
+              if grep -q "colour:" "$file" 2>/dev/null; then
+                echo "❌ Found typo 'colour:' in $file (should be 'color:')"
+                VALIDATION_FAILED=1
+              fi
             fi
-          done
+            
+            # Validate JavaScript files
+            if [[ $file == *.js ]]; then
+              if ! node -c "$file" 2>/dev/null; then
+                echo "❌ Syntax error in $file"
+                VALIDATION_FAILED=1
+              fi
+            fi
+            
+            # Validate Java files
+            if [[ $file == *.java ]]; then
+              if grep -q "TODO" "$file" 2>/dev/null; then
+                echo "❌ Found TODO comment in $file (incomplete)"
+                VALIDATION_FAILED=1
+              fi
+              if ! javac "$file" 2>/dev/null; then
+                echo "❌ Compilation error in $file"
+                VALIDATION_FAILED=1
+              fi
+            fi
+            
+            # Validate C++ files
+            if [[ $file == *.cpp ]]; then
+              if grep -q "TODO" "$file" 2>/dev/null; then
+                echo "❌ Found TODO comment in $file (incomplete)"
+                VALIDATION_FAILED=1
+              fi
+              if ! g++ -c "$file" -o /tmp/test.o 2>/dev/null; then
+                echo "❌ Compilation error in $file"
+                VALIDATION_FAILED=1
+              fi
+            fi
+            
+          done <<< "$CHANGED_FILES"
           
           if [ $VALIDATION_FAILED -eq 0 ]; then
             echo "VALIDATION_RESULT=PASS" >> $GITHUB_OUTPUT
-            echo "✅ All validations passed!"
+            echo "✅ All changed files validated successfully!"
             exit 0
           else
             echo "VALIDATION_RESULT=FAIL" >> $GITHUB_OUTPUT
-            echo "❌ Validation failed!"
+            echo "❌ Validation failed for changed files!"
             exit 1
           fi
 
-      - name: Report Results
+      - name: Set PR Status
         if: always()
         run: |
-          echo "Validation Result: ${{ steps.validate.outputs.VALIDATION_RESULT }}"
           if [ "${{ steps.validate.outputs.VALIDATION_RESULT }}" = "PASS" ]; then
-            echo "✅ SUCCESS - PR will be accepted"
+            echo "✅ PASS - All validations passed"
             exit 0
           else
-            echo "❌ FAILURE - PR needs fixes"
+            echo "❌ FAIL - Some validations failed"
             exit 1
           fi
