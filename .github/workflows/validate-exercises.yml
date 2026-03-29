@@ -104,12 +104,6 @@ jobs:
       - name: Determine validation status
         id: validation_status
         run: |
-          echo "DEBUG: js_validation outcome: ${{ steps.js_validation.outcome }}"
-          echo "DEBUG: java_validation outcome: ${{ steps.java_validation.outcome }}"
-          echo "DEBUG: cpp_validation outcome: ${{ steps.cpp_validation.outcome }}"
-          echo "DEBUG: html_validation outcome: ${{ steps.html_validation.outcome }}"
-          echo "DEBUG: css_validation outcome: ${{ steps.css_validation.outcome }}"
-          
           FAILED=0
           [ "${{ steps.js_validation.outcome }}" = "failure" ] && FAILED=1
           [ "${{ steps.java_validation.outcome }}" = "failure" ] && FAILED=1
@@ -119,29 +113,18 @@ jobs:
           
           if [ $FAILED -eq 1 ]; then
             echo "validation_passed=false" >> $GITHUB_OUTPUT
-            echo "VALIDATION FAILED"
           else
             echo "validation_passed=true" >> $GITHUB_OUTPUT
-            echo "VALIDATION PASSED"
           fi
 
-      - name: Post Success Comment
-        if: steps.validation_status.outputs.validation_passed == 'true'
-        run: |
-          echo "Posting success comment..."
-          echo "PR Number: ${{ github.event.pull_request.number }}"
-
       - name: Comment and Close PR - Success
-        if: steps.validation_status.outputs.validation_passed == 'true'
+        if: github.event_name == 'pull_request' && steps.validation_status.outputs.validation_passed == 'true'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr_number = context.payload.pull_request.number;
-            console.log("PR Number:", pr_number);
-            console.log("Repo:", context.repo.owner + "/" + context.repo.repo);
+            const pr_number = context.issue.number;
             
-            // Post comment
             await github.rest.issues.createComment({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -149,7 +132,6 @@ jobs:
               body: '✅ **Excellent Work!** All exercises have been validated successfully! Your submission is correct.\n\nClosing this PR now.'
             });
             
-            // Close PR
             await github.rest.pulls.update({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -158,13 +140,12 @@ jobs:
             });
 
       - name: Comment on PR - Failure
-        if: steps.validation_status.outputs.validation_passed == 'false'
+        if: github.event_name == 'pull_request' && steps.validation_status.outputs.validation_passed == 'false'
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const pr_number = context.payload.pull_request.number;
-            console.log("PR Number:", pr_number);
+            const pr_number = context.issue.number;
             
             await github.rest.issues.createComment({
               owner: context.repo.owner,
