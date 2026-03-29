@@ -1,0 +1,6 @@
+.title {
+  color: red;
+}
+#title {
+  color: blue; /* intended to be overridden but id has higher specificity */
+}

@@ -1,0 +1,6 @@
+.container {
+  display: block; /* should be flex */
+}
+.container .item {
+  flex: 1;
+}
