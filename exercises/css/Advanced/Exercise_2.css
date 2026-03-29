@@ -1,0 +1,7 @@
+@keyframes slide {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+.box {
+  animation: slide 2s infinite; /* missing animation-fill-mode maybe intended but keeps going */
+}
