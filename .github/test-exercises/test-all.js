@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+const os = require('os');
 
 // Track all test results
 const results = {
@@ -32,7 +33,7 @@ function testHTML(filePath) {
       throw new Error('Missing or incorrect DOCTYPE');
     }
     
-    // Check for unclosed tags (simple heuristic)
+    // Check for unclosed tags
     const openTags = (content.match(/<(\w+)[^>]*>/g) || []).length;
     const closeTags = (content.match(/<\/(\w+)>/g) || []).length;
     if (openTags !== closeTags) {
@@ -180,7 +181,7 @@ function testPython(filePath) {
   try {
     // Syntax check
     try {
-      execSync(`python3 -m py_compile "${filePath}"`, { encoding: 'utf-8' });
+      execSync(`python3 -m py_compile "${filePath}"`, { encoding: 'utf-8', stdio: 'pipe' });
     } catch (e) {
       throw new Error(`Syntax error: ${e.message}`);
     }
@@ -212,6 +213,26 @@ function testJava(filePath) {
       throw new Error(`Compilation error: ${e.toString()}`);
     }
     
+    // Get class name
+    const className = path.basename(filePath, '.java');
+    
+    // Exercise-specific output checks
+    if (filename.includes('Exercise_1') && filename.includes('Beginner')) {
+      try {
+        const output = execSync(`java -cp ${path.dirname(filePath)} ${className}`, { 
+          encoding: 'utf-8',
+          timeout: 5000,
+          stdio: 'pipe'
+        }).trim();
+        
+        if (!output.includes('Hello') || !output.includes('World')) {
+          throw new Error(`Output should contain "Hello, World!" but got: "${output}"`);
+        }
+      } catch (e) {
+        throw new Error(`Execution failed: ${e.message}`);
+      }
+    }
+    
     results.passed.push(testName);
     return true;
   } catch (error) {
@@ -232,12 +253,39 @@ function testCpp(filePath) {
       throw new Error('File contains TODO - exercise is incomplete');
     }
     
+    const outputFile = `/tmp/${path.basename(filePath, '.cpp')}_test`;
+    
     // Compilation test
     try {
-      execSync(`g++ -c "${filePath}" -o /tmp/test.o`, { encoding: 'utf-8', stdio: 'pipe' });
+      execSync(`g++ "${filePath}" -o "${outputFile}"`, { 
+        encoding: 'utf-8',
+        stdio: 'pipe'
+      });
     } catch (e) {
       throw new Error(`Compilation error: ${e.toString()}`);
     }
+    
+    // Exercise-specific output checks
+    if (filename.includes('Exercise_1') && filename.includes('Beginner')) {
+      try {
+        const output = execSync(`"${outputFile}"`, { 
+          encoding: 'utf-8',
+          timeout: 5000,
+          stdio: 'pipe'
+        }).trim();
+        
+        if (!output.includes('Hello') || !output.includes('World')) {
+          throw new Error(`Output should contain "Hello, World!" but got: "${output}"`);
+        }
+      } catch (e) {
+        throw new Error(`Execution failed: ${e.message}`);
+      }
+    }
+    
+    // Cleanup
+    try {
+      fs.unlinkSync(outputFile);
+    } catch (e) {}
     
     results.passed.push(testName);
     return true;
