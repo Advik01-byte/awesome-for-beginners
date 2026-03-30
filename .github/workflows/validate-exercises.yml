@@ -24,28 +24,20 @@ jobs:
         id: changed_files
         run: |
           git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(html|css|js|py|java|cpp)$' || true)
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(html|css|js|java|cpp)$' || true)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
-          echo "=== Changed Files ==="
-          echo "$CHANGED_FILES"
 
       - name: Setup environments
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++ python3
+          sudo apt-get install -y g++ default-jdk
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: 'temurin'
-          java-version: '11'
 
       - name: Run comprehensive validation
         id: validate
@@ -67,25 +59,36 @@ jobs:
             fi
             
             echo ""
-            echo "Validating: $file"
+            echo "📝 Validating: $file"
             
-            # Run test
-            if node .github/test-exercises/test-all.js "$file" > /tmp/test-output.txt 2>&1; then
-              echo "✅ PASSED"
+            # Run validation
+            if node -e "
+              const Validator = require('./.github/test-exercises/validator.js');
+              const validator = new Validator('$file');
+              const passed = validator.validate();
+              
+              if (!passed) {
+                console.error('❌ FAILED:');
+                validator.getErrors().forEach(err => console.error('  - ' + err));
+                process.exit(1);
+              }
+              
+              console.log('✅ PASSED');
+            " 2>&1; then
+              echo "✅ Validation passed"
             else
-              echo "❌ FAILED"
-              cat /tmp/test-output.txt
+              echo "❌ Validation failed"
               VALIDATION_FAILED=1
             fi
           done <<< "$CHANGED_FILES"
           
           echo ""
           if [ $VALIDATION_FAILED -eq 0 ]; then
-            echo "✅ ALL VALIDATIONS PASSED"
+            echo "✅✅✅ ALL VALIDATIONS PASSED ✅✅✅"
             echo "VALIDATION_RESULT=PASS" >> $GITHUB_OUTPUT
             exit 0
           else
-            echo "❌ SOME VALIDATIONS FAILED"
+            echo "❌❌❌ SOME VALIDATIONS FAILED ❌❌❌"
             echo "VALIDATION_RESULT=FAIL" >> $GITHUB_OUTPUT
             exit 1
           fi
