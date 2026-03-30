@@ -24,16 +24,17 @@ jobs:
         id: changed_files
         run: |
           git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(html|css|js|py|java|cpp)$' || true)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
+          echo "=== Changed Files ==="
+          echo "$CHANGED_FILES"
 
       - name: Setup environments
         run: |
           sudo apt-get update
-          sudo apt-get install -y g++
-          npm install -g htmlhint stylelint stylelint-config-standard
+          sudo apt-get install -y g++ python3
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -46,14 +47,19 @@ jobs:
           distribution: 'temurin'
           java-version: '11'
 
-      - name: Run validation tests
+      - name: Run comprehensive validation
         id: validate
         run: |
           VALIDATION_FAILED=0
-          
           CHANGED_FILES="${{ steps.changed_files.outputs.files }}"
           
-          echo "=== Validating Changed Files ==="
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "❌ No exercise files changed"
+            echo "VALIDATION_RESULT=FAIL" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "=== Starting Validation ===" 
           
           while IFS= read -r file; do
             if [ -z "$file" ] || [ ! -f "$file" ]; then
@@ -61,89 +67,16 @@ jobs:
             fi
             
             echo ""
-            echo "Checking: $file"
+            echo "Validating: $file"
             
-            # HTML validation with logic checks
-            if [[ $file == *.html ]]; then
-              if ! htmlhint "$file" 2>&1 | grep -q "0 error"; then
-                echo "❌ HTML syntax error"
-                VALIDATION_FAILED=1
-              fi
-              
-              # Run logic tests
-              TEST_RESULT=$(node -e "
-                const test = require('./.github/test-exercises/test-html.js');
-                const checks = test('$file');
-                const failed = Object.entries(checks).filter(([k,v]) => !v);
-                if (failed.length > 0) {
-                  failed.forEach(([k,v]) => console.log('❌ Failed: ' + k));
-                  process.exit(1);
-                }
-              " 2>&1)
-              
-              if [ $? -ne 0 ]; then
-                echo "❌ HTML logic check failed:"
-                echo "$TEST_RESULT"
-                VALIDATION_FAILED=1
-              else
-                echo "✅ HTML passed all checks"
-              fi
+            # Run test
+            if node .github/test-exercises/test-all.js "$file" > /tmp/test-output.txt 2>&1; then
+              echo "✅ PASSED"
+            else
+              echo "❌ FAILED"
+              cat /tmp/test-output.txt
+              VALIDATION_FAILED=1
             fi
-            
-            # CSS validation
-            if [[ $file == *.css ]]; then
-              if ! npx stylelint "$file" 2>&1 | grep -q "0 problem"; then
-                echo "❌ CSS syntax error"
-                VALIDATION_FAILED=1
-              fi
-              
-              # Run logic tests
-              TEST_RESULT=$(node -e "
-                const test = require('./.github/test-exercises/test-css.js');
-                const checks = test('$file');
-                const failed = Object.entries(checks).filter(([k,v]) => !v);
-                if (failed.length > 0) {
-                  failed.forEach(([k,v]) => console.log('❌ Failed: ' + k));
-                  process.exit(1);
-                }
-              " 2>&1)
-              
-              if [ $? -ne 0 ]; then
-                echo "❌ CSS logic check failed:"
-                echo "$TEST_RESULT"
-                VALIDATION_FAILED=1
-              else
-                echo "✅ CSS passed all checks"
-              fi
-            fi
-            
-            # JavaScript validation
-            if [[ $file == *.js ]]; then
-              if ! node -c "$file" 2>/dev/null; then
-                echo "❌ JavaScript syntax error"
-                VALIDATION_FAILED=1
-              fi
-              
-              # Run logic tests
-              TEST_RESULT=$(node -e "
-                const test = require('./.github/test-exercises/test-javascript.js');
-                const checks = test('$file');
-                const failed = Object.entries(checks).filter(([k,v]) => !v);
-                if (failed.length > 0) {
-                  failed.forEach(([k,v]) => console.log('❌ Failed: ' + k));
-                  process.exit(1);
-                }
-              " 2>&1)
-              
-              if [ $? -ne 0 ]; then
-                echo "❌ JavaScript logic check failed:"
-                echo "$TEST_RESULT"
-                VALIDATION_FAILED=1
-              else
-                echo "✅ JavaScript passed all checks"
-              fi
-            fi
-            
           done <<< "$CHANGED_FILES"
           
           echo ""
@@ -152,7 +85,7 @@ jobs:
             echo "VALIDATION_RESULT=PASS" >> $GITHUB_OUTPUT
             exit 0
           else
-            echo "❌ VALIDATION FAILED"
+            echo "❌ SOME VALIDATIONS FAILED"
             echo "VALIDATION_RESULT=FAIL" >> $GITHUB_OUTPUT
             exit 1
           fi
