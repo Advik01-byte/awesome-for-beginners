@@ -22,6 +22,8 @@ class ExerciseValidator {
       throw new Error(`No specification found for ${this.relativePath}`);
     }
 
+    this.validateHasMeaningfulContent();
+
     // Run all tests
     for (const test of this.spec.tests) {
       this.runTest(test);
@@ -38,6 +40,30 @@ class ExerciseValidator {
     }
 
     return this.errors.length === 0;
+  }
+
+  validateHasMeaningfulContent() {
+    const stripped = this.stripComments(this.content, this.spec.language);
+
+    if (!stripped.trim()) {
+      this.errors.push('File contains only comments or whitespace - exercise incomplete');
+    }
+  }
+
+  stripComments(content, language) {
+    let stripped = content;
+
+    if (language === 'html') {
+      stripped = stripped.replace(/<!--[\s\S]*?-->/g, '');
+    } else if (language === 'css') {
+      stripped = stripped.replace(/\/\*[\s\S]*?\*\//g, '');
+    } else if (language === 'javascript' || language === 'java' || language === 'cpp') {
+      stripped = stripped
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/^\s*\/\/.*$/gm, '');
+    }
+
+    return stripped;
   }
 
   runTest(test) {
