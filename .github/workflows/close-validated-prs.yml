@@ -18,72 +18,97 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            
+            const validationMarker = '<!-- awesome-for-beginners-validation -->';
+
+            function buildCommentBody(conclusion) {
+              if (conclusion === 'success') {
+                return `${validationMarker}\n[VALIDATION PASSED]\n\nAll exercises have been validated successfully.\n\nThis PR will be closed now.`;
+              }
+
+              return `${validationMarker}\n[VALIDATION FAILED]\n\nPlease fix the errors shown in the workflow run and push again. The workflow will automatically re-validate.\n\nWhat to check:\n- HTML: Proper tags and structure\n- CSS: Valid syntax\n- JavaScript: No syntax errors\n- Java/C++: Compile successfully and remove TODO comments`;
+            }
+
             // Get the workflow run that triggered this
             const workflowRun = context.payload.workflow_run;
             console.log(`Workflow run: ${workflowRun.id}`);
             console.log(`Status: ${workflowRun.status}`);
             console.log(`Conclusion: ${workflowRun.conclusion}`);
-            
+
             // Find associated PR
             const prs = await github.rest.pulls.list({
-              owner: owner,
-              repo: repo,
+              owner,
+              repo,
               state: 'open',
               per_page: 100
             });
-            
+
             console.log(`Checking ${prs.data.length} open PRs...`);
-            
+
             for (const pr of prs.data) {
-              if (pr.head.sha === workflowRun.head_sha) {
-                console.log(`Found PR: #${pr.number}`);
-                
-                // Check if already commented
-                const comments = await github.rest.issues.listComments({
-                  owner: owner,
-                  repo: repo,
-                  issue_number: pr.number
-                });
-                
-                const hasComment = comments.data.some(c => 
-                  c.body.includes('Validation') || c.body.includes('✅') || c.body.includes('❌')
-                );
-                
-                if (workflowRun.conclusion === 'success') {
-                  console.log(`✅ Validation PASSED for PR #${pr.number}`);
-                  
-                  if (!hasComment) {
-                    await github.rest.issues.createComment({
-                      owner: owner,
-                      repo: repo,
-                      issue_number: pr.number,
-                      body: '✅ **Excellent Work!** All exercises have been validated successfully!\n\nYour submission is correct. Closing this PR now.'
-                    });
-                  }
-                  
-                  await github.rest.pulls.update({
-                    owner: owner,
-                    repo: repo,
-                    pull_number: pr.number,
-                    state: 'closed'
+              if (pr.head.sha !== workflowRun.head_sha) {
+                continue;
+              }
+
+              console.log(`Found PR: #${pr.number}`);
+
+              const comments = await github.rest.issues.listComments({
+                owner,
+                repo,
+                issue_number: pr.number
+              });
+
+              const existingComment = comments.data.find(comment =>
+                comment.body && comment.body.includes(validationMarker)
+              );
+
+              if (workflowRun.conclusion === 'success') {
+                console.log(`Validation PASSED for PR #${pr.number}`);
+
+                const body = buildCommentBody('success');
+                if (existingComment) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existingComment.id,
+                    body
                   });
-                  
-                  console.log(`✅ Closed PR #${pr.number}`);
-                } 
-                else if (workflowRun.conclusion === 'failure') {
-                  console.log(`❌ Validation FAILED for PR #${pr.number}`);
-                  
-                  if (!hasComment) {
-                    await github.rest.issues.createComment({
-                      owner: owner,
-                      repo: repo,
-                      issue_number: pr.number,
-                      body: '❌ **Validation Failed**\n\nPlease fix the errors shown in the workflow run and push again. The workflow will automatically re-validate.\n\n**What to check:**\n- HTML: Proper tags and structure\n- CSS: Valid syntax\n- JavaScript: No syntax errors\n- Java/C++: Compile successfully and remove TODO comments'
-                    });
-                  }
-                  
-                  console.log(`Added comment to PR #${pr.number}`);
+                } else {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: pr.number,
+                    body
+                  });
                 }
+
+                await github.rest.pulls.update({
+                  owner,
+                  repo,
+                  pull_number: pr.number,
+                  state: 'closed'
+                });
+
+                console.log(`Closed PR #${pr.number}`);
+              } else if (workflowRun.conclusion === 'failure') {
+                console.log(`Validation FAILED for PR #${pr.number}`);
+
+                const body = buildCommentBody('failure');
+                if (existingComment) {
+                  await github.rest.issues.updateComment({
+                    owner,
+                    repo,
+                    comment_id: existingComment.id,
+                    body
+                  });
+                } else {
+                  await github.rest.issues.createComment({
+                    owner,
+                    repo,
+                    issue_number: pr.number,
+                    body
+                  });
+                }
+
+                console.log(`Updated validation comment on PR #${pr.number}`);
               }
             }
