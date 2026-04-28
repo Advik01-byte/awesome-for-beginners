@@ -24,7 +24,7 @@ jobs:
         id: changed_files
         run: |
           git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '\.(html|css|js|java|cpp)$' || true)
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -E '(^EXERCISES\.md$|^exercises/.+_exercises\.md$|^exercises/.+\.(html|css|js|java|cpp|py)$)' || true)
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$CHANGED_FILES" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
@@ -63,9 +63,10 @@ jobs:
             
             # Run validation
             if node -e "
+              (async () => {
               const Validator = require('./.github/test-exercises/validator.js');
               const validator = new Validator('$file');
-              const passed = validator.validate();
+              const passed = await validator.validate();
               
               if (!passed) {
                 console.error('❌ FAILED:');
@@ -74,6 +75,7 @@ jobs:
               }
               
               console.log('✅ PASSED');
+              })().catch(err => { console.error(err); process.exit(1); });
             " 2>&1; then
               echo "✅ Validation passed"
             else
