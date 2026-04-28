@@ -1,1 +1,1 @@
-// TODO: Add C++ Hello World exercise
+// TODO: Add C++ 'Hello World!' exercise
